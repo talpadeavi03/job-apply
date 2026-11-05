@@ -89,3 +89,10 @@ def test_platforms_config():
     assert "Indeed" in connector_names
     assert "Wellfound" in connector_names
     assert "Hirist" in connector_names
+
+
+def test_discord_alert_graceful_fallback():
+    from notifications.discord import send_discord_alert
+    # Without webhook URL, should return False without raising exceptions
+    res = send_discord_alert({"candidate": "Avinash", "total_discovered": 10}, webhook_url="")
+    assert res is False

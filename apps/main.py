@@ -23,6 +23,7 @@ from database.models import Job
 from engine.dedup import generate_job_hash
 from engine.matcher import JobMatcher
 from engine.parser import extract_resume_profile
+from notifications.discord import send_discord_alert
 
 # Setup Logging
 log_file = LOGS_DIR / "aetherapply.log"
@@ -183,6 +184,9 @@ def run_pipeline() -> Dict[str, Any]:
                     f.write(f"- **Errors:** {len(stats['errors'])}\n")
         except Exception as e:
             logger.warning("Could not write to GITHUB_STEP_SUMMARY: %s", e)
+
+    # 5. Send Discord Notification (if configured)
+    send_discord_alert(stats)
 
     return stats
 

@@ -33,6 +33,9 @@ GMAIL_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID", "")
 GMAIL_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET", "")
 GMAIL_REFRESH_TOKEN = os.getenv("GMAIL_REFRESH_TOKEN", "")
 
+# Discord Webhook for Run Notifications
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+
 # Candidate Master Profile Details
 CANDIDATE_NAME = "Avinash Vishnu Talpade"
 CANDIDATE_EMAIL = "talpadeavi0303@gmail.com"
