@@ -98,26 +98,45 @@ class BrowserManager:
                 logger.warning("Failed injecting LinkedIn cookie: %s", e)
 
         # Inject Naukri session cookies if configured
-        if NAUKRI_AT or NAUKRI_COOKIES:
+        if NAUKRI_AT:
             try:
-                cookies_to_add = []
-                if NAUKRI_AT:
-                    cookies_to_add.append({
+                token_val = NAUKRI_AT.strip()
+                context.add_cookies([
+                    {
                         "name": "nauk_at",
-                        "value": NAUKRI_AT.strip(),
+                        "value": token_val,
                         "domain": ".naukri.com",
                         "path": "/",
-                    })
-                if NAUKRI_COOKIES:
-                    for item in NAUKRI_COOKIES.split(";"):
-                        if "=" in item:
-                            k, v = item.strip().split("=", 1)
-                            cookies_to_add.append({
-                                "name": k.strip(),
-                                "value": v.strip(),
-                                "domain": ".naukri.com",
-                                "path": "/",
-                            })
+                    },
+                    {
+                        "name": "_naukri_user",
+                        "value": token_val,
+                        "domain": ".naukri.com",
+                        "path": "/",
+                    },
+                ])
+                # Set in localStorage for Next.js / client-side React session
+                context.add_init_script(f"""
+                    try {{
+                        localStorage.setItem('accessToken', '{token_val}');
+                        localStorage.setItem('nauk_at', '{token_val}');
+                    }} catch (e) {{}}
+                """)
+                logger.info("Injected Naukri JWT session tokens.")
+            except Exception as e:
+                logger.warning("Failed injecting Naukri tokens: %s", e)
+        elif NAUKRI_COOKIES:
+            try:
+                cookies_to_add = []
+                for item in NAUKRI_COOKIES.split(";"):
+                    if "=" in item:
+                        k, v = item.strip().split("=", 1)
+                        cookies_to_add.append({
+                            "name": k.strip(),
+                            "value": v.strip(),
+                            "domain": ".naukri.com",
+                            "path": "/",
+                        })
                 if cookies_to_add:
                     context.add_cookies(cookies_to_add)
                     logger.info("Injected %d Naukri session cookies.", len(cookies_to_add))
