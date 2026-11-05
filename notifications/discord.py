@@ -104,6 +104,49 @@ def notify_high_match_job(job: Dict[str, Any], webhook_url: Optional[str] = None
     return _post_payload(payload, webhook_url)
 
 
+def notify_batch_high_match_jobs(jobs: List[Dict[str, Any]], webhook_url: Optional[str] = None) -> None:
+    """
+    Sends individual cards for the top 5 high-match jobs,
+    and a consolidated digest for the remaining jobs to avoid message flooding.
+    """
+    if not jobs:
+        return
+
+    # Sort descending by match score
+    sorted_jobs = sorted(jobs, key=lambda x: x.get("match_score", 0), reverse=True)
+
+    # Top 5: Individual cards with 1-click apply links
+    for j in sorted_jobs[:5]:
+        notify_high_match_job(j, webhook_url)
+
+    # Remaining jobs: single grouped digest embed
+    remaining = sorted_jobs[5:]
+    if remaining:
+        lines = []
+        for j in remaining[:15]:
+            t = j.get("title", "Role")
+            c = j.get("company", "Company")
+            p = j.get("platform", "Web")
+            s = j.get("match_score", 0)
+            u = j.get("url")
+            link_text = f"[{t} @ {c}]({u})" if u else f"{t} @ {c}"
+            lines.append(f"• **{s}%** | {link_text} *({p})*")
+
+        payload = {
+            "username": "AetherApply Job Radar",
+            "avatar_url": "https://img.icons8.com/color/512/starred-ticket.png",
+            "embeds": [
+                {
+                    "title": f"📋 Additional High-Match Opportunities ({len(remaining)} more)",
+                    "description": "\n".join(lines),
+                    "color": 0x3498DB,  # Blue
+                    "footer": {"text": "AetherApply Consolidated Digest"},
+                }
+            ],
+        }
+        _post_payload(payload, webhook_url)
+
+
 def notify_application_submitted(job: Dict[str, Any], details: str = "", webhook_url: Optional[str] = None) -> bool:
     """Sends a receipt whenever an application is automatically submitted."""
     title = job.get("title", "Unknown Role")

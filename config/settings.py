@@ -36,6 +36,9 @@ GMAIL_REFRESH_TOKEN = os.getenv("GMAIL_REFRESH_TOKEN", "")
 # Discord Webhook for Run Notifications
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 
+# Platform Session Authentication (for Auto-Apply)
+LINKEDIN_LI_AT = os.getenv("LINKEDIN_LI_AT", "")
+
 # Candidate Master Profile Details
 CANDIDATE_NAME = "Avinash Vishnu Talpade"
 CANDIDATE_EMAIL = "talpadeavi0303@gmail.com"

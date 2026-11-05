@@ -1,6 +1,7 @@
 """Notifications module for AetherApply."""
 from notifications.discord import (
     notify_application_submitted,
+    notify_batch_high_match_jobs,
     notify_high_match_job,
     notify_issue,
     notify_pipeline_start,
@@ -9,6 +10,7 @@ from notifications.discord import (
 
 __all__ = [
     "notify_application_submitted",
+    "notify_batch_high_match_jobs",
     "notify_high_match_job",
     "notify_issue",
     "notify_pipeline_start",

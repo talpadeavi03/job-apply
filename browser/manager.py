@@ -8,7 +8,7 @@ from typing import Generator, Optional
 
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 
-from config.settings import SCREENSHOTS_DIR
+from config.settings import LINKEDIN_LI_AT, SCREENSHOTS_DIR
 
 logger = logging.getLogger("aetherapply.browser")
 
@@ -79,6 +79,24 @@ class BrowserManager:
                 get: () => undefined
             });
         """)
+
+        # Inject LinkedIn session cookie if configured
+        if LINKEDIN_LI_AT:
+            try:
+                context.add_cookies([
+                    {
+                        "name": "li_at",
+                        "value": LINKEDIN_LI_AT.strip(),
+                        "domain": ".www.linkedin.com",
+                        "path": "/",
+                        "secure": True,
+                        "httpOnly": True,
+                    }
+                ])
+                logger.info("Injected LinkedIn session authentication cookie.")
+            except Exception as e:
+                logger.warning("Failed injecting LinkedIn cookie: %s", e)
+
         return context
 
     def take_screenshot(self, page: Page, name_prefix: str = "error") -> Path:

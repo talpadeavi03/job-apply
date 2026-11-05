@@ -24,6 +24,7 @@ from engine.dedup import generate_job_hash
 from engine.matcher import JobMatcher
 from engine.parser import extract_resume_profile
 from notifications.discord import (
+    notify_batch_high_match_jobs,
     notify_high_match_job,
     notify_issue,
     notify_pipeline_start,
@@ -75,6 +76,7 @@ def run_pipeline() -> Dict[str, Any]:
     }
 
     # 3. Launch single BrowserManager session
+    high_match_alerts = []
     with BrowserManager(headless=True) as browser_mgr:
         active_connectors = get_active_connectors(platforms_config, browser_manager=browser_mgr)
         logger.info("Executing %d active connectors...", len(active_connectors))
@@ -120,8 +122,7 @@ def run_pipeline() -> Dict[str, Any]:
 
                         if status == "queued_apply":
                             stats["high_match_jobs"] += 1
-                            # Immediate high-match alert on Discord
-                            notify_high_match_job({
+                            high_match_alerts.append({
                                 "title": title,
                                 "company": company,
                                 "platform": platform,
@@ -175,7 +176,11 @@ def run_pipeline() -> Dict[str, Any]:
                     error_details=str(e),
                 )
 
-        # 4. Auto-Apply to Queued High-Match Jobs
+        # 4. Notify high-match jobs on Discord (top 5 cards + digest)
+        if high_match_alerts:
+            notify_batch_high_match_jobs(high_match_alerts)
+
+        # 5. Auto-Apply to Queued High-Match Jobs
         logger.info("Starting automated application processing...")
         applier = AutoApplier(browser_manager=browser_mgr)
         apply_stats = applier.process_queued_applications(max_applications=5)
