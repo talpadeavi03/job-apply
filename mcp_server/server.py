@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 from mcp.server.mcpserver import MCPServer
 
 from application.answers import ANSWERS, get_answer_for_question
-from application.apply import AutoApplier
 from browser.manager import BrowserManager
 from config.settings import RESUME_PATH
 from database.db import get_session
@@ -147,6 +146,7 @@ def apply_to_queued_jobs(max_applications: int = 3) -> Dict[str, int]:
     Triggers automated browser application for top queued jobs (using Playwright
     headless browser, resume attachment, and form filling).
     """
+    from application.apply import AutoApplier
     with BrowserManager(headless=True) as bm:
         applier = AutoApplier(browser_manager=bm)
         return applier.process_queued_applications(max_applications=max_applications)
