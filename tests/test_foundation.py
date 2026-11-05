@@ -96,3 +96,28 @@ def test_discord_alert_graceful_fallback():
     # Without webhook URL, should return False without raising exceptions
     res = send_discord_alert({"candidate": "Avinash", "total_discovered": 10}, webhook_url="")
     assert res is False
+
+
+def test_mcp_tools():
+    from mcp_server.server import (
+        get_candidate_profile,
+        get_resume_file_path,
+        answer_application_question,
+        evaluate_job_match,
+        generate_custom_cover_letter
+    )
+    profile = get_candidate_profile()
+    assert profile["name"] == "Avinash Vishnu Talpade"
+
+    path = get_resume_file_path()
+    assert "AT_26_AI.pdf" in path
+
+    ans_exp = answer_application_question("How many years of experience do you have?")
+    assert "3.5" in ans_exp
+
+    cl = generate_custom_cover_letter("Cloud Engineer", "Google")
+    assert "Avinash" in cl
+    assert "Accenture" in cl
+
+    match = evaluate_job_match("Cloud Engineer", "Azure Kubernetes Terraform")
+    assert match["score"] >= 60.0
