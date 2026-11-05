@@ -7,6 +7,7 @@ from database.db import get_session
 from database.firestore import save_job_to_firestore
 from database.models import ApplicationRecord, Job
 from application.linkedin_applier import LinkedInApplier
+from notifications.discord import notify_application_submitted
 
 logger = logging.getLogger("aetherapply.application.apply")
 
@@ -82,6 +83,12 @@ class AutoApplier:
                         "status": job.status,
                         "match_score": job.match_score,
                     })
+
+                    if status == "submitted":
+                        notify_application_submitted(
+                            {"title": job.title, "company": job.company, "platform": job.platform, "url": job.url},
+                            details=details,
+                        )
 
                     stats[status] = stats.get(status, 0) + 1
 

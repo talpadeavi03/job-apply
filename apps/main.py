@@ -23,7 +23,12 @@ from database.models import Job
 from engine.dedup import generate_job_hash
 from engine.matcher import JobMatcher
 from engine.parser import extract_resume_profile
-from notifications.discord import send_discord_alert
+from notifications.discord import (
+    notify_high_match_job,
+    notify_issue,
+    notify_pipeline_start,
+    send_discord_alert,
+)
 
 # Setup Logging
 log_file = LOGS_DIR / "aetherapply.log"
@@ -73,6 +78,7 @@ def run_pipeline() -> Dict[str, Any]:
     with BrowserManager(headless=True) as browser_mgr:
         active_connectors = get_active_connectors(platforms_config, browser_manager=browser_mgr)
         logger.info("Executing %d active connectors...", len(active_connectors))
+        notify_pipeline_start(candidate=resume_profile.name, platforms=[c.name for c in active_connectors])
 
         for connector in active_connectors:
             platform_name = connector.name
@@ -114,6 +120,17 @@ def run_pipeline() -> Dict[str, Any]:
 
                         if status == "queued_apply":
                             stats["high_match_jobs"] += 1
+                            # Immediate high-match alert on Discord
+                            notify_high_match_job({
+                                "title": title,
+                                "company": company,
+                                "platform": platform,
+                                "location": item.get("location"),
+                                "url": url,
+                                "match_score": score,
+                                "status": status,
+                                "matched_skills": match_result.get("matched_skills", []),
+                            })
                         elif status == "manual_review":
                             stats["manual_review_jobs"] += 1
 
@@ -152,6 +169,11 @@ def run_pipeline() -> Dict[str, Any]:
                 err_msg = f"Failed scanning {platform_name}: {str(e)}"
                 logger.error(err_msg)
                 stats["errors"].append(err_msg)
+                notify_issue(
+                    category=f"Platform Error ({platform_name})",
+                    description=f"Automated scraper encountered an issue while querying {platform_name}.",
+                    error_details=str(e),
+                )
 
         # 4. Auto-Apply to Queued High-Match Jobs
         logger.info("Starting automated application processing...")

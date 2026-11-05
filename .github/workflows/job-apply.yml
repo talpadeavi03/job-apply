@@ -105,3 +105,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Workflow completed." >> $GITHUB_STEP_SUMMARY
           echo "- Check uploaded artifacts for logs." >> $GITHUB_STEP_SUMMARY
+
+      - name: Alert Discord on Pipeline Failure
+        if: failure()
+        run: |
+          if [ -n "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
+            curl -s -H "Content-Type: application/json" \
+              -X POST \
+              -d '{"username": "AetherApply Monitor", "embeds": [{"title": "🚨 AetherApply Workflow Failed", "description": "The automated 4-hour workflow encountered an unexpected failure on GitHub Actions runner. Check workflow logs.", "color": 15158332, "fields": [{"name": "Branch", "value": "${{ github.ref_name }}", "inline": true}, {"name": "Run ID", "value": "[View Run Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": true}]}]}' \
+              "${{ secrets.DISCORD_WEBHOOK_URL }}"
+          fi
