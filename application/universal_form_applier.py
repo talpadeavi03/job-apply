@@ -119,10 +119,11 @@ class UniversalFormApplier:
 
             # 4. Check for Submit or Review button
             submit_btn = self.page.query_selector(
-                "button[type='submit'], input[type='submit'], button:has-text('Submit Application'), button:has-text('Submit')"
+                "button[type='submit'], input[type='submit'], button:has-text('Submit Application'), "
+                "button:has-text('Submit'), button:has-text('Apply Now'), button:has-text('Send Application')"
             )
 
-            if submit_btn and uploaded:
+            if submit_btn and (uploaded or len(inputs) > 0):
                 logger.info("Found submit button on completed form. Submitting application...")
                 human_delay(1.0, 2.0)
                 submit_btn.click()

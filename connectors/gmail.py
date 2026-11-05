@@ -16,6 +16,7 @@ from config.settings import (
 from connectors.base import BaseConnector
 from database.db import get_session
 from database.models import ProcessedMessage
+from engine.dedup import canonicalize_job_url
 
 logger = logging.getLogger("aetherapply.connectors.gmail")
 
@@ -151,11 +152,18 @@ class GmailConnector(BaseConnector):
                 filtered_links = [
                     u.rstrip(".,);]")
                     for u in links
-                    if not any(x in u.lower() for x in ("unsubscribe", "mailto:", "facebook.com", "preferences"))
+                    if not any(x in u.lower() for x in ("unsubscribe", "mailto:", "facebook.com", "preferences", "settings"))
                 ]
 
                 platform = self.detect_platform(sender, subject, filtered_links)
-                primary_url = filtered_links[0] if filtered_links else None
+
+                # Prioritize links that point directly to job listings
+                job_links = [
+                    u for u in filtered_links
+                    if any(term in u.lower() for term in ["/jobs/view/", "viewjob", "job-listings", "/careers/", "/job/", "/jobs/", "apply"])
+                ]
+                raw_url = job_links[0] if job_links else (filtered_links[0] if filtered_links else None)
+                primary_url = canonicalize_job_url(raw_url) if raw_url else None
 
                 # Extract title and company heuristics
                 clean_title = re.sub(r"^(re:\s*|fwd:\s*|job alert:\s*)", "", subject, flags=re.IGNORECASE).strip()

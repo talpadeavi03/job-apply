@@ -1,5 +1,6 @@
 """Central auto-apply orchestrator."""
 import logging
+import os
 from typing import Dict, List, Optional
 from browser.manager import BrowserManager
 from config.settings import RESUME_PATH
@@ -18,16 +19,23 @@ class AutoApplier:
     def __init__(self, browser_manager: Optional[BrowserManager] = None):
         self.browser_manager = browser_manager
 
-    def process_queued_applications(self, max_applications: int = 5) -> Dict[str, int]:
+    def process_queued_applications(self, max_applications: Optional[int] = None) -> Dict[str, int]:
         """
-        Finds jobs marked as 'queued_apply' and attempts automated application.
+        Finds jobs marked as 'queued_apply' (or unapplied high-match) and executes automated application.
         """
+        if max_applications is None:
+            max_applications = int(os.getenv("MAX_APPLY_PER_CYCLE", "15"))
+
         stats = {"submitted": 0, "queued_manual": 0, "failed": 0}
 
         with get_session() as session:
+            # Query queued jobs or high-match unapplied opportunities
             queued_jobs = (
                 session.query(Job)
-                .filter(Job.status == "queued_apply")
+                .filter(
+                    (Job.status == "queued_apply") |
+                    ((Job.status == "manual_review") & (Job.match_score >= 70.0))
+                )
                 .order_by(Job.match_score.desc())
                 .limit(max_applications)
                 .all()
@@ -37,7 +45,7 @@ class AutoApplier:
                 logger.info("No applications currently queued for auto-apply.")
                 return stats
 
-            logger.info("Found %d queued jobs for auto-apply.", len(queued_jobs))
+            logger.info("Found %d candidate jobs for auto-apply.", len(queued_jobs))
 
             if not self.browser_manager:
                 logger.warning("BrowserManager not available. Skipping application submission.")
@@ -47,8 +55,9 @@ class AutoApplier:
             page = context.new_page()
 
             try:
-                for job in queued_jobs:
-                    logger.info("Processing apply for: %s @ %s (%s)", job.title, job.company, job.platform)
+                for idx, job in enumerate(queued_jobs, 1):
+                    logger.info("[%d/%d] Processing apply for: %s @ %s (Score: %.1f, Platform: %s)",
+                                idx, len(queued_jobs), job.title, job.company, job.match_score or 0.0, job.platform)
                     apply_result = {"status": "queued_manual", "details": "Platform auto-apply in progress"}
 
                     if job.platform.lower() == "linkedin" and job.url:
@@ -64,6 +73,12 @@ class AutoApplier:
                     else:
                         apply_result["status"] = "queued_manual"
                         apply_result["details"] = "No direct application URL available; queued for review."
+
+                    # Follow-through for external company redirects
+                    if apply_result.get("status") == "external_apply" and apply_result.get("external_url"):
+                        logger.info("Following external portal link for %s: %s", job.company, apply_result["external_url"])
+                        universal = UniversalFormApplier(page, resume_path=RESUME_PATH)
+                        apply_result = universal.fill_and_apply(apply_result["external_url"])
 
                     status = apply_result.get("status", "queued_manual")
                     details = apply_result.get("details", "")
@@ -91,6 +106,7 @@ class AutoApplier:
                         "platform": job.platform,
                         "status": job.status,
                         "match_score": job.match_score,
+                        "details": details,
                     })
 
                     if status == "submitted":

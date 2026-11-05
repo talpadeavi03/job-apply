@@ -18,16 +18,7 @@ DEFAULT_USER_AGENT = (
 )
 
 DEFAULT_EXTRA_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Sec-Ch-Ua": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Linux"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
 }
 
 CHROMIUM_ARGS = [
@@ -83,15 +74,24 @@ class BrowserManager:
         # Inject LinkedIn session cookie if configured
         if LINKEDIN_LI_AT:
             try:
+                li_val = LINKEDIN_LI_AT.strip()
                 context.add_cookies([
                     {
                         "name": "li_at",
-                        "value": LINKEDIN_LI_AT.strip(),
+                        "value": li_val,
+                        "domain": ".linkedin.com",
+                        "path": "/",
+                        "secure": True,
+                        "httpOnly": True,
+                    },
+                    {
+                        "name": "li_at",
+                        "value": li_val,
                         "domain": ".www.linkedin.com",
                         "path": "/",
                         "secure": True,
                         "httpOnly": True,
-                    }
+                    },
                 ])
                 logger.info("Injected LinkedIn session authentication cookie.")
             except Exception as e:

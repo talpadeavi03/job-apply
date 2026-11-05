@@ -121,3 +121,31 @@ def test_mcp_tools():
 
     match = evaluate_job_match("Cloud Engineer", "Azure Kubernetes Terraform")
     assert match["score"] >= 60.0
+
+
+def test_canonicalize_job_url():
+    from engine.dedup import canonicalize_job_url
+
+    # LinkedIn comm tracking redirect
+    raw_li = "https://www.linkedin.com/comm/jobs/view/4483471135/?trackingId=9mG1f2eR7p&refId=abc&otpToken=xyz"
+    clean_li = canonicalize_job_url(raw_li)
+    assert clean_li == "https://www.linkedin.com/jobs/view/4483471135/"
+
+    # Regional in.linkedin.com comm URL
+    raw_in = "https://in.linkedin.com/comm/jobs/view/4474809810/?trackingId=123"
+    assert canonicalize_job_url(raw_in) == "https://www.linkedin.com/jobs/view/4474809810/"
+
+    # Naukri tracking query stripping
+    raw_naukri = "https://www.naukri.com/job-listings-cloud-engineer-12345?src=jobsearchDesk&xp=1"
+    assert canonicalize_job_url(raw_naukri) == "https://www.naukri.com/job-listings-cloud-engineer-12345"
+
+
+def test_answers_question_matching():
+    from application.answers import get_answer_for_question
+
+    assert get_answer_for_question("How many years of total experience do you have?") == "3.5"
+    assert get_answer_for_question("Are you legally authorized to work in India?") == "Yes"
+    assert get_answer_for_question("Will you now or in the future require visa sponsorship?") == "No"
+    assert get_answer_for_question("What is your current notice period in days?") == "15"
+    assert get_answer_for_question("What is your expected CTC in INR?") == "1200000"
+    assert get_answer_for_question("What is your current CTC?") == "900000"

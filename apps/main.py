@@ -183,7 +183,7 @@ def run_pipeline() -> Dict[str, Any]:
         # 5. Auto-Apply to Queued High-Match Jobs
         logger.info("Starting automated application processing...")
         applier = AutoApplier(browser_manager=browser_mgr)
-        apply_stats = applier.process_queued_applications(max_applications=5)
+        apply_stats = applier.process_queued_applications()
         stats["applications_submitted"] = apply_stats.get("submitted", 0)
         stats["applications_queued_manual"] = apply_stats.get("queued_manual", 0)
 
