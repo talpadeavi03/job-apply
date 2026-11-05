@@ -1,0 +1,145 @@
+# AetherApply Platform Configuration
+# Controls enabled platforms, scan frequencies, and platform-specific settings
+
+global:
+  max_jobs_per_run: 50
+  auto_apply_min_score: 75.0
+  manual_review_min_score: 50.0
+  request_delay_seconds: 3.0
+  user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+
+platforms:
+  gmail:
+    enabled: true
+    name: "Gmail Job Alerts"
+    type: "email_alerts"
+    query: "label:inbox is:unread (job OR career OR hiring OR vacancy OR 'apply now' OR 'job alert')"
+    max_emails: 100
+
+  linkedin:
+    enabled: true
+    name: "LinkedIn"
+    type: "browser"
+    base_url: "https://www.linkedin.com"
+    search_keywords:
+      - "Cloud Engineer"
+      - "DevOps Engineer"
+      - "Azure DevOps"
+      - "AWS Cloud Engineer"
+    locations:
+      - "Pune, India"
+      - "Remote"
+      - "India"
+    easy_apply_only: true
+    max_applications_per_run: 10
+
+  naukri:
+    enabled: true
+    name: "Naukri"
+    type: "browser"
+    base_url: "https://www.naukri.com"
+    search_keywords:
+      - "Cloud Engineer"
+      - "DevOps Engineer"
+      - "Terraform Kubernetes"
+    locations:
+      - "Pune"
+      - "Remote"
+    max_applications_per_run: 10
+
+  indeed:
+    enabled: true
+    name: "Indeed"
+    type: "browser"
+    base_url: "https://www.indeed.com"
+    search_keywords:
+      - "Cloud Engineer"
+      - "DevOps Engineer"
+    locations:
+      - "Pune"
+      - "Remote"
+    max_applications_per_run: 5
+
+  foundit:
+    enabled: true
+    name: "Foundit"
+    type: "browser"
+    base_url: "https://www.foundit.in"
+    search_keywords:
+      - "Cloud Engineer"
+      - "DevOps"
+    locations:
+      - "Pune"
+    max_applications_per_run: 5
+
+  wellfound:
+    enabled: true
+    name: "Wellfound"
+    type: "browser"
+    base_url: "https://wellfound.com"
+    search_keywords:
+      - "Cloud Engineer"
+      - "DevOps"
+    locations:
+      - "Remote"
+    max_applications_per_run: 5
+
+  glassdoor:
+    enabled: false
+    name: "Glassdoor"
+    type: "browser"
+    base_url: "https://www.glassdoor.com"
+
+  ambitionbox:
+    enabled: false
+    name: "AmbitionBox"
+    type: "browser"
+    base_url: "https://www.ambitionbox.com"
+
+  hirist:
+    enabled: false
+    name: "Hirist"
+    type: "browser"
+    base_url: "https://www.hirist.tech"
+
+  acciojob:
+    enabled: false
+    name: "AccioJob"
+    type: "browser"
+    base_url: "https://www.acciojob.com"
+
+  futwork:
+    enabled: false
+    name: "Futwork"
+    type: "browser"
+    base_url: "https://www.futwork.com"
+
+  jobot:
+    enabled: false
+    name: "Jobot"
+    type: "browser"
+    base_url: "https://jobot.com"
+
+  haystack:
+    enabled: false
+    name: "Haystack"
+    type: "browser"
+    base_url: "https://haystack.com"
+
+  careerbuilder:
+    enabled: false
+    name: "CareerBuilder"
+    type: "browser"
+    base_url: "https://www.careerbuilder.com"
+
+  teamshine:
+    enabled: false
+    name: "TeamShine"
+    type: "browser"
+    base_url: "https://teamshine.in"
+
+  alignerr:
+    enabled: false
+    name: "Alignerr"
+    type: "browser"
+    base_url: "https://alignerr.com"
