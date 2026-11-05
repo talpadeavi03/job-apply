@@ -7,6 +7,7 @@ from database.db import get_session
 from database.firestore import save_job_to_firestore
 from database.models import ApplicationRecord, Job
 from application.linkedin_applier import LinkedInApplier
+from application.naukri_applier import NaukriApplier
 from application.universal_form_applier import UniversalFormApplier
 from notifications.discord import notify_application_submitted
 
@@ -52,6 +53,9 @@ class AutoApplier:
 
                     if job.platform.lower() == "linkedin" and job.url:
                         applier = LinkedInApplier(page, resume_path=RESUME_PATH)
+                        apply_result = applier.apply_to_job(job.url)
+                    elif job.platform.lower() == "naukri" and job.url:
+                        applier = NaukriApplier(page, resume_path=RESUME_PATH)
                         apply_result = applier.apply_to_job(job.url)
                     elif job.url:
                         # Universal ATS & External Portal Applier

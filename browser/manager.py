@@ -8,7 +8,7 @@ from typing import Generator, Optional
 
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 
-from config.settings import LINKEDIN_LI_AT, SCREENSHOTS_DIR
+from config.settings import LINKEDIN_LI_AT, NAUKRI_AT, NAUKRI_COOKIES, SCREENSHOTS_DIR
 
 logger = logging.getLogger("aetherapply.browser")
 
@@ -96,6 +96,33 @@ class BrowserManager:
                 logger.info("Injected LinkedIn session authentication cookie.")
             except Exception as e:
                 logger.warning("Failed injecting LinkedIn cookie: %s", e)
+
+        # Inject Naukri session cookies if configured
+        if NAUKRI_AT or NAUKRI_COOKIES:
+            try:
+                cookies_to_add = []
+                if NAUKRI_AT:
+                    cookies_to_add.append({
+                        "name": "nauk_at",
+                        "value": NAUKRI_AT.strip(),
+                        "domain": ".naukri.com",
+                        "path": "/",
+                    })
+                if NAUKRI_COOKIES:
+                    for item in NAUKRI_COOKIES.split(";"):
+                        if "=" in item:
+                            k, v = item.strip().split("=", 1)
+                            cookies_to_add.append({
+                                "name": k.strip(),
+                                "value": v.strip(),
+                                "domain": ".naukri.com",
+                                "path": "/",
+                            })
+                if cookies_to_add:
+                    context.add_cookies(cookies_to_add)
+                    logger.info("Injected %d Naukri session cookies.", len(cookies_to_add))
+            except Exception as e:
+                logger.warning("Failed injecting Naukri cookies: %s", e)
 
         return context
 

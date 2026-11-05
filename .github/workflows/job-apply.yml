@@ -32,6 +32,8 @@ jobs:
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       LINKEDIN_LI_AT: ${{ secrets.LINKEDIN_LI_AT }}
+      NAUKRI_AT: ${{ secrets.NAUKRI_AT }}
+      NAUKRI_COOKIES: ${{ secrets.NAUKRI_COOKIES }}
 
     steps:
       - name: Checkout Repository
