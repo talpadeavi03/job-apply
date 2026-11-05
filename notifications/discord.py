@@ -15,7 +15,11 @@ def send_discord_alert(stats: Dict[str, Any], webhook_url: Optional[str] = None)
     """
     Sends a rich formatted embed report to a Discord channel via Webhook.
     """
-    url = webhook_url or os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+    if webhook_url is not None:
+        url = webhook_url.strip()
+    else:
+        url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+
     if not url:
         logger.debug("DISCORD_WEBHOOK_URL not configured. Skipping Discord alert.")
         return False
