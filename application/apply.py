@@ -7,6 +7,7 @@ from database.db import get_session
 from database.firestore import save_job_to_firestore
 from database.models import ApplicationRecord, Job
 from application.linkedin_applier import LinkedInApplier
+from application.universal_form_applier import UniversalFormApplier
 from notifications.discord import notify_application_submitted
 
 logger = logging.getLogger("aetherapply.application.apply")
@@ -52,9 +53,13 @@ class AutoApplier:
                     if job.platform.lower() == "linkedin" and job.url:
                         applier = LinkedInApplier(page, resume_path=RESUME_PATH)
                         apply_result = applier.apply_to_job(job.url)
+                    elif job.url:
+                        # Universal ATS & External Portal Applier
+                        universal = UniversalFormApplier(page, resume_path=RESUME_PATH)
+                        apply_result = universal.fill_and_apply(job.url)
                     else:
                         apply_result["status"] = "queued_manual"
-                        apply_result["details"] = f"Automated apply not yet enabled for {job.platform}; queued for review."
+                        apply_result["details"] = "No direct application URL available; queued for review."
 
                     status = apply_result.get("status", "queued_manual")
                     details = apply_result.get("details", "")
