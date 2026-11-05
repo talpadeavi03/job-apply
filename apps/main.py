@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from application.apply import AutoApplier
 from browser.manager import BrowserManager
 from config.settings import (
     CANDIDATE_NAME,
@@ -17,6 +18,7 @@ from config.settings import (
 )
 from connectors.registry import get_active_connectors
 from database.db import get_session, init_db
+from database.firestore import get_firestore_client, save_job_to_firestore
 from database.models import Job
 from engine.dedup import generate_job_hash
 from engine.matcher import JobMatcher
@@ -130,10 +132,32 @@ def run_pipeline() -> Dict[str, Any]:
                         session.add(new_job)
                         stats["new_jobs_stored"] += 1
 
+                        # Synchronize with Firebase Firestore (if enabled)
+                        save_job_to_firestore({
+                            "job_hash": job_hash,
+                            "title": title,
+                            "company": company,
+                            "platform": platform,
+                            "location": item.get("location"),
+                            "url": url,
+                            "description": description,
+                            "match_score": score,
+                            "status": status,
+                            "source": source,
+                            "source_id": source_id,
+                        })
+
             except Exception as e:
                 err_msg = f"Failed scanning {platform_name}: {str(e)}"
                 logger.error(err_msg)
                 stats["errors"].append(err_msg)
+
+        # 4. Auto-Apply to Queued High-Match Jobs
+        logger.info("Starting automated application processing...")
+        applier = AutoApplier(browser_manager=browser_mgr)
+        apply_stats = applier.process_queued_applications(max_applications=5)
+        stats["applications_submitted"] = apply_stats.get("submitted", 0)
+        stats["applications_queued_manual"] = apply_stats.get("queued_manual", 0)
 
     # 4. Summary Output
     logger.info("==========================================")

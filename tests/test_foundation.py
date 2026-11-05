@@ -80,3 +80,12 @@ def test_platforms_config():
     assert "gmail" in conf["platforms"]
     assert "linkedin" in conf["platforms"]
     assert "naukri" in conf["platforms"]
+    assert "indeed" in conf["platforms"]
+    assert "wellfound" in conf["platforms"]
+    assert "hirist" in conf["platforms"]
+
+    connectors = get_active_connectors(conf)
+    connector_names = [c.name for c in connectors]
+    assert "Indeed" in connector_names
+    assert "Wellfound" in connector_names
+    assert "Hirist" in connector_names

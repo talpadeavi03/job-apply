@@ -3,9 +3,13 @@ import logging
 from typing import Any, Dict, List, Optional
 from browser.manager import BrowserManager
 from connectors.base import BaseConnector
+from connectors.foundit import FounditConnector
 from connectors.gmail import GmailConnector
+from connectors.hirist import HiristConnector
+from connectors.indeed import IndeedConnector
 from connectors.linkedin import LinkedInConnector
 from connectors.naukri import NaukriConnector
+from connectors.wellfound import WellfoundConnector
 
 logger = logging.getLogger("aetherapply.connectors.registry")
 
@@ -13,6 +17,10 @@ CONNECTOR_CLASSES = {
     "gmail": GmailConnector,
     "linkedin": LinkedInConnector,
     "naukri": NaukriConnector,
+    "indeed": IndeedConnector,
+    "wellfound": WellfoundConnector,
+    "foundit": FounditConnector,
+    "hirist": HiristConnector,
 }
 
 

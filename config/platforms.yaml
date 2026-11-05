@@ -97,7 +97,7 @@ platforms:
     base_url: "https://www.ambitionbox.com"
 
   hirist:
-    enabled: false
+    enabled: true
     name: "Hirist"
     type: "browser"
     base_url: "https://www.hirist.tech"
