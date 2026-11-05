@@ -1,6 +1,8 @@
 name: AetherApply Pipeline
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
   schedule:
