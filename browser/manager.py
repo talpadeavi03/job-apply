@@ -33,6 +33,24 @@ CHROMIUM_ARGS = [
 ]
 
 
+def check_linkedin_cookie_validity(token: str) -> bool:
+    """Checks if the LinkedIn session cookie is valid or revoked before injecting."""
+    try:
+        import requests
+        s = requests.Session()
+        s.headers.update({"User-Agent": DEFAULT_USER_AGENT})
+        s.cookies.set("li_at", token.strip(), domain=".linkedin.com")
+        r = s.get("https://www.linkedin.com/feed/", allow_redirects=False, timeout=4)
+        set_cookie = r.headers.get("Set-Cookie", "")
+        if "delete me" in set_cookie or "deleted" in set_cookie:
+            return False
+        if r.status_code == 302 and r.headers.get("Location") == "https://www.linkedin.com/feed/":
+            return False
+        return True
+    except Exception:
+        return False
+
+
 class BrowserManager:
     """Manages a single Playwright Chromium instance across connector runs."""
 
@@ -40,6 +58,7 @@ class BrowserManager:
         self.headless = headless
         self._playwright: Optional[Playwright] = None
         self._browser: Optional[Browser] = None
+        self._linkedin_cookie_valid: Optional[bool] = None
 
     def start(self) -> Browser:
         """Launches the shared Chromium browser."""
@@ -71,29 +90,35 @@ class BrowserManager:
             });
         """)
 
-        # Inject LinkedIn session cookie if configured
+        # Inject LinkedIn session cookie if configured and valid
         if LINKEDIN_LI_AT:
             try:
                 li_val = LINKEDIN_LI_AT.strip()
-                context.add_cookies([
-                    {
-                        "name": "li_at",
-                        "value": li_val,
-                        "domain": ".linkedin.com",
-                        "path": "/",
-                        "secure": True,
-                        "httpOnly": True,
-                    },
-                    {
-                        "name": "li_at",
-                        "value": li_val,
-                        "domain": ".www.linkedin.com",
-                        "path": "/",
-                        "secure": True,
-                        "httpOnly": True,
-                    },
-                ])
-                logger.info("Injected LinkedIn session authentication cookie.")
+                if self._linkedin_cookie_valid is None:
+                    self._linkedin_cookie_valid = check_linkedin_cookie_validity(li_val)
+
+                if self._linkedin_cookie_valid:
+                    context.add_cookies([
+                        {
+                            "name": "li_at",
+                            "value": li_val,
+                            "domain": ".linkedin.com",
+                            "path": "/",
+                            "secure": True,
+                            "httpOnly": True,
+                        },
+                        {
+                            "name": "li_at",
+                            "value": li_val,
+                            "domain": ".www.linkedin.com",
+                            "path": "/",
+                            "secure": True,
+                            "httpOnly": True,
+                        },
+                    ])
+                    logger.info("Injected valid LinkedIn session authentication cookie.")
+                else:
+                    logger.warning("LinkedIn session cookie is invalid or expired. Skipping cookie injection to avoid redirect loops.")
             except Exception as e:
                 logger.warning("Failed injecting LinkedIn cookie: %s", e)
 

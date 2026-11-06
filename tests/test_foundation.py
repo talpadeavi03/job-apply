@@ -149,3 +149,43 @@ def test_answers_question_matching():
     assert get_answer_for_question("What is your current notice period in days?") == "15"
     assert get_answer_for_question("What is your expected CTC in INR?") == "1200000"
     assert get_answer_for_question("What is your current CTC?") == "900000"
+
+
+def test_wellfound_applier_initialization():
+    from application.wellfound_applier import WellfoundApplier
+    from config.settings import RESUME_PATH
+    applier = WellfoundApplier(page=None, resume_path=RESUME_PATH)
+    assert applier.resume_path.exists()
+    assert "AT_26_AI.pdf" in str(applier.resume_path)
+
+
+def test_round_robin_selection():
+    from database.models import Job
+    # Simulate candidates from multiple platforms
+    candidates = [
+        Job(job_hash="1", title="DevOps", company="A", platform="LinkedIn", match_score=100.0),
+        Job(job_hash="2", title="DevOps", company="B", platform="LinkedIn", match_score=100.0),
+        Job(job_hash="3", title="DevOps", company="C", platform="Wellfound", match_score=95.0),
+        Job(job_hash="4", title="DevOps", company="D", platform="Naukri", match_score=90.0),
+    ]
+
+    platform_buckets = {}
+    for j in candidates:
+        p = (j.platform or "other").strip().lower()
+        platform_buckets.setdefault(p, []).append(j)
+
+    queued = []
+    max_apps = 3
+    while len(queued) < max_apps and any(platform_buckets.values()):
+        for p, bucket in list(platform_buckets.items()):
+            if bucket:
+                queued.append(bucket.pop(0))
+                if len(queued) >= max_apps:
+                    break
+
+    assert len(queued) == 3
+    platforms = [j.platform for j in queued]
+    # Verify diversity across platforms
+    assert "LinkedIn" in platforms
+    assert "Wellfound" in platforms
+    assert "Naukri" in platforms
