@@ -38,7 +38,7 @@ def fetch_verification_pin_from_gmail(query_term: str = "linkedin", max_wait_sec
 
     while time.time() - start_time < max_wait_seconds:
         try:
-            q = f"from:{query_term} (pin OR code OR verification)"
+            q = f"from:{query_term} (pin OR code OR verification OR 'one-time' OR security)"
             res = connector.service.users().messages().list(userId="me", q=q, maxResults=3).execute()
             messages = res.get("messages", [])
 

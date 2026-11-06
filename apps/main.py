@@ -90,6 +90,17 @@ def run_pipeline() -> Dict[str, Any]:
             except Exception as auth_err:
                 logger.debug("Cloud LinkedIn authentication check: %s", auth_err)
 
+        if (os.getenv("NAUKRI_USERNAME") or os.getenv("NAUKRI_EMAIL")) and os.getenv("NAUKRI_PASSWORD"):
+            try:
+                from browser.auth import authenticate_naukri_cloud
+                nauk_ctx = browser_mgr.new_context()
+                nauk_page = nauk_ctx.new_page()
+                authenticate_naukri_cloud(nauk_ctx, nauk_page)
+                nauk_page.close()
+                nauk_ctx.close()
+            except Exception as auth_err:
+                logger.debug("Cloud Naukri authentication check: %s", auth_err)
+
         active_connectors = get_active_connectors(platforms_config, browser_manager=browser_mgr)
         logger.info("Executing %d active connectors...", len(active_connectors))
         notify_pipeline_start(candidate=resume_profile.name, platforms=[c.name for c in active_connectors])
