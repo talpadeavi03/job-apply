@@ -19,6 +19,9 @@ DEFAULT_USER_AGENT = (
 
 DEFAULT_EXTRA_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
+    "sec-ch-ua": '"Google Chrome";v="130", "Chromium";v="130", "Not?A_Brand";v="24"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Linux"',
 }
 
 CHROMIUM_ARGS = [

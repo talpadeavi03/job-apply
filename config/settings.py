@@ -38,8 +38,12 @@ DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 # Platform Session Authentication (for Auto-Apply)
 LINKEDIN_LI_AT = os.getenv("LINKEDIN_LI_AT", "")
+LINKEDIN_USERNAME = os.getenv("LINKEDIN_USERNAME") or os.getenv("LINKEDIN_EMAIL", "")
+LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD", "")
 NAUKRI_AT = os.getenv("NAUKRI_AT", "")
 NAUKRI_COOKIES = os.getenv("NAUKRI_COOKIES", "")
+NAUKRI_USERNAME = os.getenv("NAUKRI_USERNAME") or os.getenv("NAUKRI_EMAIL", "")
+NAUKRI_PASSWORD = os.getenv("NAUKRI_PASSWORD", "")
 
 # Candidate Master Profile Details
 CANDIDATE_NAME = "Avinash Vishnu Talpade"

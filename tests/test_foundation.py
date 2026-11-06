@@ -189,3 +189,54 @@ def test_round_robin_selection():
     assert "LinkedIn" in platforms
     assert "Wellfound" in platforms
     assert "Naukri" in platforms
+
+
+def test_naukri_canonicalize_url():
+    from engine.dedup import canonicalize_job_url
+
+    raw_jd = "https://www.naukri.com/jd/job-listings-cloud-ops-engineer-naukri-assist-12345?src=cja&xp=2"
+    clean_jd = canonicalize_job_url(raw_jd)
+    assert clean_jd == "https://www.naukri.com/job-listings-cloud-ops-engineer-naukri-assist-12345"
+
+    raw_router = "https://www.naukri.com/jd?xp=1&src=cja"
+    clean_router = canonicalize_job_url(raw_router)
+    assert "https://www.naukri.com/jd?xp=1&src=cja" == clean_router
+
+
+def test_naukri_applier_initialization():
+    from application.naukri_applier import NaukriApplier
+    from config.settings import RESUME_PATH
+
+    applier = NaukriApplier(page=None, resume_path=RESUME_PATH)
+    assert applier.resume_path.exists()
+    assert "AT_26_AI.pdf" in str(applier.resume_path)
+
+
+def test_gmail_html_job_extraction():
+    import base64
+    from connectors.gmail import extract_html_job_links
+
+    html_content = """
+    <html>
+        <body>
+            <a href="https://www.naukri.com/jd/job-listings-devops-engineer-12345?src=cja">DevOps Engineer</a>
+            <a href="https://www.naukri.com/durl/nEZb">Apply Now</a>
+            <a href="https://www.naukri.com/unsubscribe">Unsubscribe</a>
+        </body>
+    </html>
+    """
+    b64_data = base64.urlsafe_b64encode(html_content.encode("utf-8")).decode("utf-8").rstrip("=")
+    payload = {
+        "mimeType": "multipart/alternative",
+        "parts": [
+            {
+                "mimeType": "text/html",
+                "body": {"data": b64_data}
+            }
+        ]
+    }
+    extracted = extract_html_job_links(payload)
+    assert len(extracted) == 2
+    assert extracted[0]["anchor_text"] == "DevOps Engineer"
+    assert "job-listings-devops-engineer" in extracted[0]["url"]
+    assert "durl" in extracted[1]["url"]

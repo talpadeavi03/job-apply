@@ -69,6 +69,38 @@ def extract_body(payload: dict) -> str:
     return re.sub(r"\s+", " ", text).strip()[:20000]
 
 
+def extract_html_job_links(payload: dict) -> List[Dict[str, str]]:
+    """Extracts job listing links and their anchor titles directly from HTML payload."""
+    parts = list(_walk_parts(payload))
+    html_parts = [b for mime, b in parts if mime == "text/html"]
+    if not html_parts:
+        return []
+
+    soup = BeautifulSoup("\n".join(html_parts), "html.parser")
+    extracted: List[Dict[str, str]] = []
+    seen_urls = set()
+
+    for a in soup.find_all("a", href=True):
+        href = a.get("href", "").strip()
+        if not href.startswith("http"):
+            continue
+        # Filter out common noise
+        if any(term in href.lower() for term in ["unsubscribe", "mailto:", "facebook.com", "preferences", "settings", "feedback"]):
+            continue
+
+        is_job_url = any(term in href.lower() for term in [
+            "/jobs/view/", "job-listings", "/jd?", "/durl/", "viewjob", "/careers/", "/job/"
+        ])
+        if not is_job_url or href in seen_urls:
+            continue
+        seen_urls.add(href)
+
+        text = re.sub(r"\s+", " ", a.get_text(" ", strip=True)).strip()
+        extracted.append({"url": href, "anchor_text": text})
+
+    return extracted
+
+
 class GmailConnector(BaseConnector):
     def __init__(self, config: Dict[str, Any], browser_manager=None):
         super().__init__(config, browser_manager)
@@ -148,38 +180,60 @@ class GmailConnector(BaseConnector):
                     self.mark_message_seen(msg_id)
                     continue
 
-                links = list(dict.fromkeys(URL_RE.findall(body_text or snippet)))
-                filtered_links = [
-                    u.rstrip(".,);]")
-                    for u in links
-                    if not any(x in u.lower() for x in ("unsubscribe", "mailto:", "facebook.com", "preferences", "settings"))
-                ]
+                # Extract HTML job links if present
+                html_job_items = extract_html_job_links(payload)
 
-                platform = self.detect_platform(sender, subject, filtered_links)
-
-                # Prioritize links that point directly to job listings
-                job_links = [
-                    u for u in filtered_links
-                    if any(term in u.lower() for term in ["/jobs/view/", "viewjob", "job-listings", "/careers/", "/job/", "/jobs/", "apply"])
-                ]
-                raw_url = job_links[0] if job_links else (filtered_links[0] if filtered_links else None)
-                primary_url = canonicalize_job_url(raw_url) if raw_url else None
-
-                # Extract title and company heuristics
                 clean_title = re.sub(r"^(re:\s*|fwd:\s*|job alert:\s*)", "", subject, flags=re.IGNORECASE).strip()
                 company_match = re.search(r"\bat\s+([A-Za-z0-9\s]+?)(?:\s+in|\s+for|\s+is|\s*[\-\|\:]|$)", clean_title, re.IGNORECASE)
-                company = company_match.group(1).strip() if company_match else "Recruiter / Company"
+                default_company = company_match.group(1).strip() if company_match else "Recruiter / Company"
 
-                discovered.append({
-                    "title": clean_title[:200],
-                    "company": company[:100],
-                    "platform": platform,
-                    "location": "Remote / India",
-                    "url": primary_url,
-                    "description": full_text[:10000],
-                    "source": "gmail_alert",
-                    "source_id": msg_id,
-                })
+                if html_job_items:
+                    for item in html_job_items[:15]:
+                        c_url = canonicalize_job_url(item["url"])
+                        if not c_url:
+                            continue
+                        anchor = item.get("anchor_text", "").strip()
+                        job_title = anchor if len(anchor) > 4 and not any(x in anchor.lower() for x in ["apply", "view all", "click", "read more"]) else clean_title
+                        item_platform = self.detect_platform(sender, job_title, [c_url])
+
+                        discovered.append({
+                            "title": job_title[:200],
+                            "company": default_company[:100],
+                            "platform": item_platform,
+                            "location": "Remote / India",
+                            "url": c_url,
+                            "description": full_text[:10000],
+                            "source": "gmail_alert",
+                            "source_id": f"{msg_id}_{hash(c_url)}",
+                        })
+                else:
+                    links = list(dict.fromkeys(URL_RE.findall(body_text or snippet)))
+                    filtered_links = [
+                        u.rstrip(".,);]")
+                        for u in links
+                        if not any(x in u.lower() for x in ("unsubscribe", "mailto:", "facebook.com", "preferences", "settings"))
+                    ]
+
+                    platform = self.detect_platform(sender, subject, filtered_links)
+
+                    # Prioritize links that point directly to job listings
+                    job_links = [
+                        u for u in filtered_links
+                        if any(term in u.lower() for term in ["/jobs/view/", "viewjob", "job-listings", "/careers/", "/job/", "/jobs/", "apply"])
+                    ]
+                    raw_url = job_links[0] if job_links else (filtered_links[0] if filtered_links else None)
+                    primary_url = canonicalize_job_url(raw_url) if raw_url else None
+
+                    discovered.append({
+                        "title": clean_title[:200],
+                        "company": default_company[:100],
+                        "platform": platform,
+                        "location": "Remote / India",
+                        "url": primary_url,
+                        "description": full_text[:10000],
+                        "source": "gmail_alert",
+                        "source_id": msg_id,
+                    })
 
                 self.mark_message_seen(msg_id)
 

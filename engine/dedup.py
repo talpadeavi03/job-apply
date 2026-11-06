@@ -30,9 +30,14 @@ def canonicalize_job_url(url: Optional[str]) -> Optional[str]:
         job_id = li_match.group(1)
         return f"https://www.linkedin.com/jobs/view/{job_id}/"
 
-    # 2. Normalize Naukri URLs (strip tracking query params)
+    # 2. Normalize Naukri URLs (strip tracking query params except on /jd redirectors)
     if "naukri.com" in url:
-        return url.split("?")[0].rstrip("/")
+        clean = url.split("?")[0].rstrip("/")
+        clean = clean.replace("naukri.com/jd/job-listings-", "naukri.com/job-listings-")
+        if clean.endswith("/jd") and "?" in url:
+            # Preserve jd router query params
+            return url.strip()
+        return clean
 
     # 3. Normalize Indeed URLs
     ind_match = re.search(r"indeed\.com/.*?[?&]jk=([a-f0-9]+)", url, re.IGNORECASE)

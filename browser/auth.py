@@ -38,7 +38,7 @@ def fetch_verification_pin_from_gmail(query_term: str = "linkedin", max_wait_sec
 
     while time.time() - start_time < max_wait_seconds:
         try:
-            q = f"from:{query_term} (pin OR code OR verification OR 'one-time' OR security)"
+            q = f"from:{query_term} (otp OR pin OR code OR verification OR 'one-time' OR security)"
             res = connector.service.users().messages().list(userId="me", q=q, maxResults=3).execute()
             messages = res.get("messages", [])
 
@@ -146,9 +146,15 @@ def authenticate_naukri_cloud(context: BrowserContext, page: Page) -> bool:
         page.goto("https://www.naukri.com/nlogin/login", timeout=30000, wait_until="domcontentloaded")
         human_delay(2.5, 3.5)
 
-        user_input = page.query_selector("input[placeholder*='Email' i], #usernameField, input[type='text']")
-        pass_input = page.query_selector("input[placeholder*='Password' i], #passwordField, input[type='password']")
-        submit_btn = page.query_selector("button[type='submit'], .loginButton")
+        # Check if already authenticated
+        if "mynaukri" in page.url or page.query_selector(".nI-gNb-drawer__bars, .view-profile-wrapper, a[href*='mynaukri']"):
+            logger.info("Already authenticated on Naukri.")
+            save_storage_state(context)
+            return True
+
+        user_input = page.query_selector("#usernameField, input[placeholder*='Email' i], input[type='text']")
+        pass_input = page.query_selector("#passwordField, input[placeholder*='Password' i], input[type='password']")
+        submit_btn = page.query_selector("button:has-text('Login'), button.blue-btn, button[type='submit']")
 
         if user_input and pass_input and submit_btn:
             user_input.fill(username.strip())
@@ -158,20 +164,24 @@ def authenticate_naukri_cloud(context: BrowserContext, page: Page) -> bool:
             submit_btn.click()
             human_delay(3.5, 5.0)
 
-            # Check for OTP
-            otp_input = page.query_selector("input[placeholder*='OTP' i], input[name='otp']")
+            # Check for OTP challenge
+            otp_input = page.query_selector("input[placeholder*='OTP' i], input[name='otp'], input.otp-input")
             if otp_input:
                 logger.info("Naukri OTP challenge detected. Fetching OTP from Gmail...")
-                otp = fetch_verification_pin_from_gmail(query_term="naukri", max_wait_seconds=30)
+                otp = fetch_verification_pin_from_gmail(query_term="naukri", max_wait_seconds=45)
                 if otp:
                     otp_input.fill(otp)
                     human_delay(1.0, 1.5)
-                    otp_submit = page.query_selector("button:has-text('Verify'), button[type='submit']")
+                    otp_submit = page.query_selector("button:has-text('Verify'), button:has-text('Submit'), button[type='submit']")
                     if otp_submit:
                         otp_submit.click()
-                        human_delay(3.0, 4.5)
+                        human_delay(3.5, 5.0)
 
-            logger.info("Naukri cloud authentication submitted.")
+            # Verify login success
+            if "mynaukri" in page.url or page.query_selector(".nI-gNb-drawer__bars, .view-profile-wrapper, a[href*='mynaukri']"):
+                logger.info("Successfully authenticated to Naukri in cloud!")
+            else:
+                logger.info("Naukri cloud authentication submitted.")
             save_storage_state(context)
             return True
 
