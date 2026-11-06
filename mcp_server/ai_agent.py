@@ -93,6 +93,44 @@ Provide a direct, high-impact response in the first person ("I"). Keep it concis
     )
 
 
+def answer_form_question(
+    question: str,
+    field_type: str = "text",
+    job_title: Optional[str] = None,
+    job_description: Optional[str] = None,
+) -> str:
+    """
+    Answers an application question for any input field type (number, text, textarea, select)
+    using rule-based profile matching first, followed by Gemini MCP reasoning.
+    """
+    import re
+    from application.answers import get_answer_for_question
+
+    # 1. Fast deterministic heuristic (phone, email, 3.5 yrs, 9/12 LPA, 15 days, Pune)
+    quick = get_answer_for_question(question)
+    if quick is not None:
+        if field_type == "number":
+            num_match = re.search(r"(\d+(?:\.\d+)?)", quick)
+            return num_match.group(1) if num_match else "3.5"
+        return quick
+
+    # 2. Heuristic for number / year fields
+    is_numeric = field_type == "number" or any(k in question.lower() for k in [
+        "how many years", "years of experience", "total experience", "relevant experience", "experience in"
+    ])
+    if is_numeric:
+        if "notice" in question.lower() or "day" in question.lower():
+            return "15"
+        return "3.5"
+
+    # 3. Use Gemini MCP reasoning grounded in master resume
+    ai_resp = generate_ai_answer(question, job_title=job_title, job_description=job_description)
+    if field_type == "number":
+        num_match = re.search(r"(\d+(?:\.\d+)?)", ai_resp)
+        return num_match.group(1) if num_match else "3.5"
+    return ai_resp
+
+
 def generate_cover_letter(job_title: str, company: str, job_description: Optional[str] = None) -> str:
     """Generates a tailored cover letter based on master resume."""
     profile = extract_resume_profile(RESUME_PATH)

@@ -33,6 +33,9 @@ GMAIL_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID", "")
 GMAIL_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET", "")
 GMAIL_REFRESH_TOKEN = os.getenv("GMAIL_REFRESH_TOKEN", "")
 
+# Gemini API Key (for MCP AI reasoning & form question answering)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
 # Discord Webhook for Run Notifications
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 

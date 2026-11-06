@@ -83,14 +83,14 @@ class AutoApplier:
                             apply_result = applier.apply_to_job(job.url)
                         elif p_lower == "naukri" and job.url:
                             applier = NaukriApplier(page, resume_path=RESUME_PATH)
-                            apply_result = applier.apply_to_job(job.url)
+                            apply_result = applier.apply_to_job(job.url, job_title=job.title)
                         elif p_lower == "linkedin" and job.url:
                             applier = LinkedInApplier(page, resume_path=RESUME_PATH)
-                            apply_result = applier.apply_to_job(job.url)
+                            apply_result = applier.apply_to_job(job.url, job_title=job.title)
                         elif job.url:
                             # Universal ATS & External Portal Applier
                             universal = UniversalFormApplier(page, resume_path=RESUME_PATH)
-                            apply_result = universal.fill_and_apply(job.url)
+                            apply_result = universal.fill_and_apply(job.url, job_title=job.title)
                         else:
                             apply_result["status"] = "queued_manual"
                             apply_result["details"] = "No direct application URL available; queued for review."
@@ -99,7 +99,7 @@ class AutoApplier:
                         if apply_result.get("status") == "external_apply" and apply_result.get("external_url"):
                             logger.info("Following external portal link for %s: %s", job.company, apply_result["external_url"])
                             universal = UniversalFormApplier(page, resume_path=RESUME_PATH)
-                            apply_result = universal.fill_and_apply(apply_result["external_url"])
+                            apply_result = universal.fill_and_apply(apply_result["external_url"], job_title=job.title)
 
                     except Exception as apply_err:
                         logger.warning("Unexpected error during job %s apply: %s", job.id, apply_err)

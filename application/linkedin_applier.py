@@ -11,6 +11,7 @@ from application.uploader import upload_resume
 from browser.utils import human_delay, safe_click, safe_fill
 from config.settings import RESUME_PATH
 from engine.dedup import canonicalize_job_url
+from mcp_server.ai_agent import answer_form_question, generate_ai_answer
 
 logger = logging.getLogger("aetherapply.application.linkedin")
 
@@ -20,7 +21,7 @@ class LinkedInApplier:
         self.page = page
         self.resume_path = resume_path or RESUME_PATH
 
-    def apply_to_job(self, job_url: str) -> Dict[str, Any]:
+    def apply_to_job(self, job_url: str, job_title: Optional[str] = None) -> Dict[str, Any]:
         """
         Attempts LinkedIn Easy Apply or extracts external career portal URL.
         Returns dict with status ('submitted', 'external_apply', 'queued_manual', 'failed') and details.
@@ -96,20 +97,37 @@ class LinkedInApplier:
                             if lbl:
                                 context_str += " " + lbl.inner_text()
 
-                        ans = get_answer_for_question(context_str)
-                        if not ans:
-                            inp_type = inp.get_attribute("type")
-                            if inp_type == "number" or "year" in context_str.lower() or "experience" in context_str.lower():
-                                ans = "3.5"
-                            elif "city" in context_str.lower() or "location" in context_str.lower():
-                                ans = "Pune"
-                            else:
-                                ans = "Yes"
-
+                        inp_type = inp.get_attribute("type") or "text"
+                        ans = answer_form_question(context_str, field_type=inp_type, job_title=job_title)
                         inp.fill(ans)
                         human_delay(0.2, 0.4)
                     except Exception as inp_err:
                         logger.debug("Input fill error: %s", inp_err)
+
+                # 1b. Fill open-ended textareas using Gemini MCP reasoning
+                textareas = modal.query_selector_all("textarea")
+                for ta in textareas:
+                    try:
+                        if not ta.is_visible() or ta.input_value():
+                            continue
+                        context_str = " ".join(filter(None, [
+                            ta.get_attribute("aria-label") or "",
+                            ta.get_attribute("placeholder") or "",
+                            ta.get_attribute("name") or "",
+                        ]))
+                        ta_id = ta.get_attribute("id")
+                        if ta_id:
+                            lbl = modal.query_selector(f"label[for='{ta_id}']")
+                            if lbl:
+                                context_str += " " + lbl.inner_text()
+                        if not context_str.strip():
+                            context_str = f"Why are you a strong fit for the {job_title or 'Cloud Engineer'} role?"
+
+                        ai_ans = answer_form_question(context_str, field_type="textarea", job_title=job_title)
+                        ta.fill(ai_ans)
+                        human_delay(0.3, 0.6)
+                    except Exception as ta_err:
+                        logger.debug("Textarea fill error: %s", ta_err)
 
                 # 2. Select Radio buttons (e.g. Work authorization -> Yes, Visa sponsorship -> No)
                 fieldsets = modal.query_selector_all("fieldset")

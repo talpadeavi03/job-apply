@@ -240,3 +240,24 @@ def test_gmail_html_job_extraction():
     assert extracted[0]["anchor_text"] == "DevOps Engineer"
     assert "job-listings-devops-engineer" in extracted[0]["url"]
     assert "durl" in extracted[1]["url"]
+
+
+def test_mcp_gemini_answer_form_question():
+    from mcp_server.ai_agent import answer_form_question
+
+    # Numeric experience questions
+    ans_num = answer_form_question("How many years of experience do you have with Kubernetes?", field_type="number")
+    assert ans_num in ["3.5", "3"]
+
+    # Notice period questions
+    ans_notice = answer_form_question("What is your official notice period in days?", field_type="number")
+    assert ans_notice == "15"
+
+    # Open-ended recruiter question
+    ans_essay = answer_form_question(
+        "Why are you interested in this Cloud Engineer position?",
+        field_type="textarea",
+        job_title="Senior Cloud Engineer",
+    )
+    assert len(ans_essay) > 20
+    assert any(term in ans_essay.lower() for term in ["accenture", "cloud", "devops", "azure", "aws"])
