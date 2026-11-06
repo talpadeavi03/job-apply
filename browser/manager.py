@@ -8,7 +8,7 @@ from typing import Generator, Optional
 
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 
-from config.settings import LINKEDIN_LI_AT, NAUKRI_AT, NAUKRI_COOKIES, SCREENSHOTS_DIR
+from config.settings import LINKEDIN_LI_AT, NAUKRI_AT, NAUKRI_COOKIES, SCREENSHOTS_DIR, STORAGE_DIR
 
 logger = logging.getLogger("aetherapply.browser")
 
@@ -75,6 +75,9 @@ class BrowserManager:
     def new_context(self, user_agent: Optional[str] = None) -> BrowserContext:
         """Creates an isolated browser context configured with stealth attributes."""
         browser = self.start()
+        state_file = STORAGE_DIR / "browser_state.json"
+        storage_kwargs = {"storage_state": str(state_file)} if state_file.exists() else {}
+
         context = browser.new_context(
             user_agent=user_agent or DEFAULT_USER_AGENT,
             viewport={"width": 1280, "height": 800},
@@ -82,6 +85,7 @@ class BrowserManager:
             timezone_id="Asia/Kolkata",
             permissions=["geolocation"],
             extra_http_headers=DEFAULT_EXTRA_HEADERS,
+            **storage_kwargs,
         )
         # Avoid webdriver flag detection
         context.add_init_script("""

@@ -32,8 +32,12 @@ jobs:
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       LINKEDIN_LI_AT: ${{ secrets.LINKEDIN_LI_AT }}
+      LINKEDIN_USERNAME: ${{ secrets.LINKEDIN_USERNAME }}
+      LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
       NAUKRI_AT: ${{ secrets.NAUKRI_AT }}
       NAUKRI_COOKIES: ${{ secrets.NAUKRI_COOKIES }}
+      NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
+      NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
 
     steps:
       - name: Checkout Repository
@@ -73,6 +77,14 @@ jobs:
           mkdir -p data
           mkdir -p storage
           mkdir -p screenshots
+
+      - name: Restore Cloud Browser Session State
+        uses: actions/cache@v4
+        with:
+          path: storage/
+          key: browser-session-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            browser-session-${{ runner.os }}-
 
       - name: Run Job Automation
         run: |

@@ -78,6 +78,18 @@ def run_pipeline() -> Dict[str, Any]:
     # 3. Launch single BrowserManager session
     high_match_alerts = []
     with BrowserManager(headless=True) as browser_mgr:
+        # Pre-authenticate cloud sessions if credentials provided in GitHub Secrets
+        if (os.getenv("LINKEDIN_USERNAME") or os.getenv("LINKEDIN_EMAIL")) and os.getenv("LINKEDIN_PASSWORD"):
+            try:
+                from browser.auth import authenticate_linkedin_cloud
+                auth_ctx = browser_mgr.new_context()
+                auth_page = auth_ctx.new_page()
+                authenticate_linkedin_cloud(auth_ctx, auth_page)
+                auth_page.close()
+                auth_ctx.close()
+            except Exception as auth_err:
+                logger.debug("Cloud LinkedIn authentication check: %s", auth_err)
+
         active_connectors = get_active_connectors(platforms_config, browser_manager=browser_mgr)
         logger.info("Executing %d active connectors...", len(active_connectors))
         notify_pipeline_start(candidate=resume_profile.name, platforms=[c.name for c in active_connectors])
