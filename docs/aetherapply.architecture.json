@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AetherApply Autonomous Platform Architecture",
+    "subtitle": "Cloud-native job discovery, NLP matching, Gemini MCP reasoning, and verified auto-apply",
+    "output": "docs/aetherapply-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "trigger", "type": "cloud", "label": "GitHub Actions", "sublabel": "cron: 0 */4 * * *", "pos": [40, 240], "size": [140, 64], "tag": "Cloud Runner" },
+    { "id": "orchestrator", "type": "backend", "label": "Pipeline Engine", "sublabel": "apps.main (Python 3.12)", "pos": [240, 240], "size": [150, 64] },
+    { "id": "resume_parser", "type": "backend", "label": "Resume Parser", "sublabel": "pypdf + AT_26_AI.pdf", "pos": [240, 90], "size": [150, 64] },
+    { "id": "matcher", "type": "backend", "label": "Job Matcher", "sublabel": "rapidfuzz semantic NLP", "pos": [240, 390], "size": [150, 64], "tag": "Score >= 75%" },
+    { "id": "browser_mgr", "type": "backend", "label": "Browser Manager", "sublabel": "Playwright Chromium", "pos": [460, 240], "size": [150, 64] },
+    { "id": "stealth", "type": "security", "label": "Stealth Headers", "sublabel": "Akamai Client Hints", "pos": [460, 90], "size": [150, 64], "tag": "sec-ch-ua bypass" },
+    { "id": "queue", "type": "messagebus", "label": "Apply Queue", "sublabel": "Fair Round-Robin", "pos": [460, 390], "size": [150, 64] },
+    { "id": "gmail_conn", "type": "external", "label": "Gmail API", "sublabel": "Alerts & 2FA OTPs", "pos": [680, 90], "size": [150, 64] },
+    { "id": "portals", "type": "external", "label": "Job Portals", "sublabel": "LinkedIn & Naukri 1-Click", "pos": [680, 240], "size": [150, 64] },
+    { "id": "gemini_mcp", "type": "cloud", "label": "Gemini 2.5 MCP", "sublabel": "Grounded AI Reasoning", "pos": [680, 390], "size": [150, 64], "tag": "Form Answers" },
+    { "id": "db", "type": "database", "label": "Database Layer", "sublabel": "SQLite / PostgreSQL", "pos": [900, 90], "size": [140, 64] },
+    { "id": "discord", "type": "external", "label": "Discord Radar", "sublabel": "Webhooks UI & Receipts", "pos": [900, 240], "size": [140, 64], "tag": "Real-time" },
+    { "id": "firestore", "type": "database", "label": "Firestore Sync", "sublabel": "Realtime Cloud Store", "pos": [900, 390], "size": [140, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "GitHub Actions Cloud Execution Environment", "wraps": ["orchestrator", "resume_parser", "matcher", "browser_mgr", "stealth", "queue"] },
+    { "kind": "security-group", "label": "External Platforms & Portals", "wraps": ["gmail_conn", "portals", "gemini_mcp"] },
+    { "kind": "region", "label": "Storage & Observability", "wraps": ["db", "discord", "firestore"] }
+  ],
+  "connections": [
+    { "id": "cron-to-engine", "from": "trigger", "to": "orchestrator", "label": "4h cycle", "variant": "emphasis" },
+    { "id": "engine-to-parser", "from": "orchestrator", "to": "resume_parser", "label": "extract profile" },
+    { "id": "engine-to-browser", "from": "orchestrator", "to": "browser_mgr", "label": "launch session" },
+    { "id": "browser-stealth", "from": "browser_mgr", "to": "stealth", "label": "anti-bot" },
+    { "id": "engine-gmail", "from": "orchestrator", "to": "gmail_conn", "label": "fetch alerts" },
+    { "id": "gmail-to-matcher", "from": "gmail_conn", "to": "matcher", "label": "alert jobs" },
+    { "id": "browser-to-portals", "from": "browser_mgr", "to": "portals", "label": "automate" },
+    { "id": "portals-to-matcher", "from": "portals", "to": "matcher", "label": "scraped jobs" },
+    { "id": "matcher-to-queue", "from": "matcher", "to": "queue", "label": "match >= 75%" },
+    { "id": "queue-to-portals", "from": "queue", "to": "portals", "label": "round-robin apply" },
+    { "id": "portals-to-gemini", "from": "portals", "to": "gemini_mcp", "label": "custom questions" },
+    { "id": "engine-to-db", "from": "orchestrator", "to": "db", "label": "audit log" },
+    { "id": "engine-to-discord", "from": "orchestrator", "to": "discord", "label": "receipts & radar", "variant": "emphasis" },
+    { "id": "engine-to-firestore", "from": "orchestrator", "to": "firestore", "label": "sync state" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Discovery & Ingestion", "items": ["Gmail API digests parsed into direct job cards", "Playwright headless Chromium scrapes LinkedIn & Naukri", "Akamai Bot Manager bypassed using authentic Chrome Client Hints"] },
+    { "dot": "emerald", "title": "Scoring & Routing", "items": ["Master resume profile parsed via pypdf", "Semantic skill matching scores jobs against target cloud/DevOps skills", "Fair round-robin queue prevents single-platform starvation"] },
+    { "dot": "rose", "title": "AI Apply & Verification", "items": ["Gemini 2.5 MCP generates first-person grounded answers", "Automated Gmail OTP polling solves 2FA challenges", "Strict DOM verification prevents false-positive submission receipts"] }
+  ]
+}
