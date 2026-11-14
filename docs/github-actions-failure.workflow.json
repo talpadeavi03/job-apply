@@ -1,0 +1,183 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "GitHub Actions Failure Diagnosis & Resolution",
+    "subtitle": "Root Cause Analysis: Runner allocation failure on talpadeavi03/job-apply",
+    "output": "docs/github-actions-failure.html",
+    "animation": "trace",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "trigger", "label": "Workflow Triggers" },
+    { "id": "orchestrator", "label": "GitHub Actions Dispatcher" },
+    { "id": "billing_gate", "label": "Runner Quota & Billing Gate", "variant": "exception" },
+    { "id": "execution", "label": "Job Execution Layer", "variant": "exception" },
+    { "id": "remedy", "label": "Remediation Paths", "variant": "normal" }
+  ],
+  "phases": [
+    { "id": "phase_trigger", "label": "Trigger & Dispatch", "fromCol": 0, "toCol": 1, "variant": "default" },
+    { "id": "phase_quota", "label": "Quota & Billing Policy", "fromCol": 2, "toCol": 2, "variant": "security" },
+    { "id": "phase_block", "label": "Runner Rejection", "fromCol": 3, "toCol": 3, "variant": "security" },
+    { "id": "phase_remedy", "label": "Actionable Solutions", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "groups": [
+    { "id": "group_failure", "label": "Billing Allocation Blocker", "lane": "billing_gate", "fromCol": 2, "toCol": 3, "variant": "security" },
+    { "id": "group_solutions", "label": "Available Fixes", "lane": "remedy", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["node_push", "node_dispatch", "node_policy", "node_billing_check", "node_runner_rejected", "node_remedy_public"],
+  "nodes": [
+    {
+      "id": "node_push",
+      "lane": "trigger",
+      "col": 0,
+      "type": "frontend",
+      "label": "Git Push / Cron",
+      "sublabel": "Commit 234f9d1 / 4h schedule",
+      "icon": "start",
+      "tag": "event"
+    },
+    {
+      "id": "node_dispatch",
+      "lane": "orchestrator",
+      "col": 1,
+      "type": "cloud",
+      "label": "Workflow Dispatch",
+      "sublabel": "job-apply.yml & tests.yml",
+      "icon": "active",
+      "tag": "dispatcher"
+    },
+    {
+      "id": "node_policy",
+      "lane": "orchestrator",
+      "col": 2,
+      "type": "security",
+      "label": "Private Repo Check",
+      "sublabel": "talpadeavi03/job-apply (private)",
+      "icon": "decision",
+      "tag": "policy"
+    },
+    {
+      "id": "node_billing_check",
+      "lane": "billing_gate",
+      "col": 2,
+      "type": "security",
+      "label": "Spending Limit Gate",
+      "sublabel": "Quota exhausted / limit $0",
+      "icon": "failure",
+      "tag": "blocked"
+    },
+    {
+      "id": "node_runner_rejected",
+      "lane": "billing_gate",
+      "col": 3,
+      "type": "security",
+      "label": "Runner Allocation Refused",
+      "sublabel": "runner_id: 0, exit in 2s",
+      "icon": "stop",
+      "tag": "annotation error"
+    },
+    {
+      "id": "node_blocked_jobs",
+      "lane": "execution",
+      "col": 3,
+      "type": "backend",
+      "label": "Steps Starved (No Run)",
+      "sublabel": "Logs: BlobNotFound (0 steps executed)",
+      "icon": "failure",
+      "tag": "pipeline aborted"
+    },
+    {
+      "id": "node_remedy_public",
+      "lane": "remedy",
+      "col": 4,
+      "type": "cloud",
+      "label": "Option A: Make Repo Public",
+      "sublabel": "100% Free Unlimited Minutes",
+      "icon": "success",
+      "tag": "recommended (zero cost)"
+    },
+    {
+      "id": "node_remedy_billing",
+      "lane": "remedy",
+      "col": 5,
+      "type": "external",
+      "label": "Option B: Increase Limit",
+      "sublabel": "Settings -> Billing & plans",
+      "icon": "briefcase",
+      "tag": "paid billing"
+    },
+    {
+      "id": "node_remedy_selfhost",
+      "lane": "execution",
+      "col": 5,
+      "type": "database",
+      "label": "Option C: Self-Hosted Runner",
+      "sublabel": "Run free runner on local host / VPS",
+      "icon": "success",
+      "tag": "free self-hosted"
+    }
+  ],
+  "edges": [
+    { "from": "node_push", "to": "node_dispatch", "variant": "emphasis" },
+    { "from": "node_dispatch", "to": "node_policy", "variant": "default" },
+    { "from": "node_policy", "to": "node_billing_check", "label": "private repository", "variant": "security" },
+    { "from": "node_billing_check", "to": "node_runner_rejected", "label": "quota = 0", "role": "error", "variant": "security" },
+    { "from": "node_runner_rejected", "to": "node_blocked_jobs", "label": "no runner assigned", "role": "error", "variant": "security" },
+    { "from": "node_runner_rejected", "to": "node_remedy_public", "label": "free cloud", "variant": "emphasis" },
+    { "from": "node_runner_rejected", "to": "node_remedy_billing", "label": "raise limit", "variant": "dashed" },
+    { "from": "node_runner_rejected", "to": "node_remedy_selfhost", "label": "local runner", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Exact GitHub Actions Failure Telemetry",
+      "items": [
+        "Check-Run ID: 132248504273 & 132248504464",
+        "Raw GitHub Annotation: 'The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the Billing & plans section in your settings.'",
+        "Runner Status: runner_id: 0, runner_name: '' (Job aborted before provisioning)",
+        "Duration: 2 seconds, conclusion: failure",
+        "Code health: 100% passing locally (15/15 pytest passed). The code and tests are completely bug-free."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Why It Happened: Private Repository Quota",
+      "items": [
+        "Repository visibility: private (talpadeavi03/job-apply)",
+        "GitHub provides 2,000 free runner minutes per month for private repositories across all workflows.",
+        "On 2026-11-10T21:43:03Z, the monthly quota was exhausted due to 4-hour scheduled pipeline runs.",
+        "Because the account spending limit is set to $0 (or payment method expired), GitHub rejects any new runner allocation."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Solution 1 (Recommended): Make Repository Public",
+      "items": [
+        "GitHub provides 100% UNLIMITED, free GitHub-hosted runner minutes for public repositories.",
+        "No secrets or passwords are in git (all secrets are stored securely in GitHub Secrets and ignored via .gitignore).",
+        "How: Go to GitHub -> talpadeavi03/job-apply -> Settings -> General -> Danger Zone -> Change repository visibility -> Make public.",
+        "Immediately re-runs all workflows with unlimited free runner time."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Solution 2: Increase GitHub Spending Limit",
+      "items": [
+        "If you prefer to keep the repository private:",
+        "Go to https://github.com/settings/billing/summary",
+        "Under 'Spending limit', click 'Change' and set a monthly limit (e.g., $5 - $10).",
+        "Add/update your payment method so GitHub can bill additional runner minutes beyond the free 2,000 min."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Solution 3: Add a Free Self-Hosted Runner",
+      "items": [
+        "You can run the Actions runner on your own local Linux machine or VPS at zero cost.",
+        "Go to Repo -> Settings -> Actions -> Runners -> New self-hosted runner.",
+        "Change 'runs-on: ubuntu-latest' to 'runs-on: self-hosted' in .github/workflows/job-apply.yml."
+      ]
+    }
+  ]
+}
