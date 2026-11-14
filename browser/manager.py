@@ -1,6 +1,8 @@
 """Playwright browser lifecycle and context manager for cloud execution."""
 import logging
 import os
+import subprocess
+import sys
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -69,10 +71,25 @@ class BrowserManager:
             self._playwright = sync_playwright().start()
         if not self._browser:
             logger.info("Launching Playwright Chromium (headless=%s)...", self.headless)
-            self._browser = self._playwright.chromium.launch(
-                headless=self.headless,
-                args=CHROMIUM_ARGS,
-            )
+            try:
+                self._browser = self._playwright.chromium.launch(
+                    headless=self.headless,
+                    args=CHROMIUM_ARGS,
+                )
+            except Exception as e:
+                err_str = str(e).lower()
+                if "playwright install" in err_str or "executable doesn't exist" in err_str:
+                    logger.warning("Playwright Chromium browser missing. Installing automatically via Playwright CLI...")
+                    subprocess.run(
+                        [sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"],
+                        check=True,
+                    )
+                    self._browser = self._playwright.chromium.launch(
+                        headless=self.headless,
+                        args=CHROMIUM_ARGS,
+                    )
+                else:
+                    raise
         return self._browser
 
     def new_context(self, user_agent: Optional[str] = None) -> BrowserContext:
