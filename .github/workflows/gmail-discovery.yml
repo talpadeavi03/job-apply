@@ -58,7 +58,7 @@ jobs:
           NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
           NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
           GMAIL_QUERY: 'label:inbox is:unread'
-          MAX_EMAILS: '100'
+          MAX_EMAILS: '200'
         run: python -m apps.main
 
       - name: Commit discovery data
