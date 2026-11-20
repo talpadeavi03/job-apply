@@ -146,9 +146,11 @@ def test_answers_question_matching():
     assert get_answer_for_question("How many years of total experience do you have?") == "3.5"
     assert get_answer_for_question("Are you legally authorized to work in India?") == "Yes"
     assert get_answer_for_question("Will you now or in the future require visa sponsorship?") == "No"
-    assert get_answer_for_question("What is your current notice period in days?") == "15"
-    assert get_answer_for_question("What is your expected CTC in INR?") == "1200000"
-    assert get_answer_for_question("What is your current CTC?") == "900000"
+    assert get_answer_for_question("What is your current notice period in days?") == "0"
+    assert get_answer_for_question("What is your notice period?") == "Immediate joiner (0 days)"
+    assert get_answer_for_question("What is your availability to join?") == "Immediate"
+    assert get_answer_for_question("What is your expected CTC in INR?") == "750000"
+    assert get_answer_for_question("What is your current CTC?") == "450000"
 
 
 def test_wellfound_applier_initialization():
@@ -251,7 +253,7 @@ def test_mcp_gemini_answer_form_question():
 
     # Notice period questions
     ans_notice = answer_form_question("What is your official notice period in days?", field_type="number")
-    assert ans_notice == "15"
+    assert ans_notice == "0"
 
     # Open-ended recruiter question
     ans_essay = answer_form_question(

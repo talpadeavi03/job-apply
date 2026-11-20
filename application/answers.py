@@ -2,6 +2,14 @@
 import re
 from typing import Optional
 
+from config.settings import (
+    CANDIDATE_AVAILABILITY,
+    CANDIDATE_CURRENT_CTC,
+    CANDIDATE_EXPECTED_CTC,
+    CANDIDATE_NOTICE_ANSWER,
+    CANDIDATE_NOTICE_PERIOD_DAYS,
+)
+
 # Standard candidate profile answers for Avinash Vishnu Talpade
 ANSWERS = {
     "phone": "8999285015",
@@ -13,12 +21,13 @@ ANSWERS = {
     "location": "Pune, Maharashtra, India",
     "country": "India",
     "years_experience": "3.5",
-    "notice_period_days": "15",
-    "notice_period_text": "15 Days / Immediate joiner",
-    "current_ctc": "450000",
-    "current_ctc_lakhs": "9",
-    "expected_ctc": "750000",
-    "expected_ctc_lakhs": "7",
+    "notice_period_days": CANDIDATE_NOTICE_PERIOD_DAYS,
+    "notice_period_text": CANDIDATE_NOTICE_ANSWER,
+    "availability": CANDIDATE_AVAILABILITY,
+    "current_ctc": CANDIDATE_CURRENT_CTC,
+    "current_ctc_lakhs": "4.5",
+    "expected_ctc": CANDIDATE_EXPECTED_CTC,
+    "expected_ctc_lakhs": "7.5",
     "degree": "Masters in Computer Application",
     "gender": "Male",
     "sponsorship_required": False,
@@ -41,21 +50,24 @@ def get_answer_for_question(label_or_text: str) -> Optional[str]:
     if any(k in text for k in ["how many years", "years of experience", "total experience", "relevant experience"]):
         return "3.5"
 
-    # Notice period
-    if "notice period" in text or "serving notice" in text or "joining time" in text:
+    # Notice period & availability
+    if any(k in text for k in ["notice period", "serving notice", "joining time", "how soon can you join", "when can you join"]):
         if "day" in text:
-            return "15"
-        return "15 Days"
+            return ANSWERS["notice_period_days"]
+        return ANSWERS["notice_period_text"]
+
+    if any(k in text for k in ["availability", "when can you start", "available to start", "available immediately", "earliest start date"]):
+        return ANSWERS["availability"]
 
     # Compensation / CTC questions
     if any(k in text for k in ["current ctc", "current salary", "present ctc", "current compensation"]):
         if "lakh" in text or "inr (lakhs)" in text:
-            return "9"
-        return "900000"
+            return ANSWERS["current_ctc_lakhs"]
+        return ANSWERS["current_ctc"]
     if any(k in text for k in ["expected ctc", "expected salary", "desired ctc", "salary expectation"]):
         if "lakh" in text or "inr (lakhs)" in text:
-            return "12"
-        return "1200000"
+            return ANSWERS["expected_ctc_lakhs"]
+        return ANSWERS["expected_ctc"]
 
     # Authorization / Sponsorship
     if any(k in text for k in ["authorized to work", "legally authorized", "right to work"]):

@@ -53,6 +53,11 @@ CANDIDATE_NAME = "Avinash Vishnu Talpade"
 CANDIDATE_EMAIL = "talpadeavi0303@gmail.com"
 CANDIDATE_PHONE = "8999285015"
 CANDIDATE_LOCATION = "Pune, Maharashtra, India"
+CANDIDATE_CURRENT_CTC = os.getenv("CURRENT_CTC", "450000")
+CANDIDATE_EXPECTED_CTC = os.getenv("EXPECTED_CTC", "750000")
+CANDIDATE_NOTICE_PERIOD_DAYS = os.getenv("NOTICE_PERIOD_DAYS", "0")
+CANDIDATE_NOTICE_ANSWER = os.getenv("RAG_NOTICE_ANSWER", "Immediate joiner (0 days)")
+CANDIDATE_AVAILABILITY = os.getenv("RAG_AVAILABILITY", "Immediate")
 
 
 def load_platforms_config() -> Dict[str, Any]:

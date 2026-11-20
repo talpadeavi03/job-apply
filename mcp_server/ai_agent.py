@@ -51,6 +51,10 @@ Target Role: Cloud Engineer / DevOps Engineer
 Years of Experience: {profile.years_of_experience} years (Accenture, 03/2022 – 08/2025)
 Core Skills: {', '.join(sorted(profile.skills))}
 Location: {profile.location}
+Current CTC: INR 4,50,000 (4.5 LPA)
+Expected CTC: INR 7,50,000 (7.5 LPA)
+Notice Period: Immediate joiner (0 days notice period)
+Availability: Immediate
 
 --- RESUME TEXT ---
 {profile.raw_text[:2000]}
@@ -76,6 +80,14 @@ Provide a direct, high-impact response in the first person ("I"). Keep it concis
 
     # Fallback response grounded in resume
     q_lower = question.lower()
+    if any(k in q_lower for k in ["notice", "joining"]):
+        return "Immediate joiner (0 days)"
+    if any(k in q_lower for k in ["availability", "available", "start"]):
+        return "Immediate"
+    if any(k in q_lower for k in ["current ctc", "current salary", "present ctc"]):
+        return "450000"
+    if any(k in q_lower for k in ["expected ctc", "expected salary", "desired ctc"]):
+        return "750000"
     if "why" in q_lower or "interest" in q_lower or "fit" in q_lower:
         return (
             f"With over 3.5 years of experience at Accenture maintaining enterprise cloud infrastructure "
@@ -106,12 +118,12 @@ def answer_form_question(
     import re
     from application.answers import get_answer_for_question
 
-    # 1. Fast deterministic heuristic (phone, email, 3.5 yrs, 9/12 LPA, 15 days, Pune)
+    # 1. Fast deterministic heuristic (phone, email, 3.5 yrs, 4.5/7.5 LPA, 0 days, Pune)
     quick = get_answer_for_question(question)
     if quick is not None:
         if field_type == "number":
             num_match = re.search(r"(\d+(?:\.\d+)?)", quick)
-            return num_match.group(1) if num_match else "3.5"
+            return num_match.group(1) if num_match else "0"
         return quick
 
     # 2. Heuristic for number / year fields
@@ -120,7 +132,11 @@ def answer_form_question(
     ])
     if is_numeric:
         if "notice" in question.lower() or "day" in question.lower():
-            return "15"
+            return "0"
+        if "ctc" in question.lower() or "salary" in question.lower():
+            if "expected" in question.lower() or "desired" in question.lower():
+                return "750000"
+            return "450000"
         return "3.5"
 
     # 3. Use Gemini MCP reasoning grounded in master resume
